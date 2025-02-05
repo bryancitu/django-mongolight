@@ -32,3 +32,7 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
           twine upload dist/*
+
+      - name: Clean up build artifacts
+        run: |
+          rm -rf dist/ build/ django_mongolight.egg-info/
