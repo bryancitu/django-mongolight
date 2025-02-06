@@ -1,6 +1,16 @@
 import pymongo
 from django.db.backends.base.base import BaseDatabaseWrapper
+from django.db.backends.base.features import BaseDatabaseFeatures
 from .creation import DatabaseCreation  # Importa la clase DatabaseCreation
+
+
+class DatabaseFeatures(BaseDatabaseFeatures):
+    """
+    Features specific to MongoDB.
+    """
+    supports_transactions = False  # MongoDB no soporta transacciones ACID
+    can_return_columns_from_insert = False
+    supports_timezones = False
 
 
 class DatabaseClient:
@@ -18,6 +28,8 @@ class DatabaseWrapper(BaseDatabaseWrapper):
     client_class = DatabaseClient  # Clase para manejar la conexión
     # Clase para manejar la creación de la base de datos
     creation_class = DatabaseCreation
+    # Clase para manejar las características del backend
+    features_class = DatabaseFeatures
 
     def __init__(self, settings_dict, *args, **kwargs):
         super().__init__(settings_dict, *args, **kwargs)
