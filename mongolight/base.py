@@ -1,5 +1,6 @@
 import pymongo
 from django.db.backends.base.base import BaseDatabaseWrapper
+from .creation import DatabaseCreation  # Importa la clase DatabaseCreation
 
 
 class DatabaseClient:
@@ -14,7 +15,9 @@ class DatabaseClient:
 class DatabaseWrapper(BaseDatabaseWrapper):
     vendor = 'mongodb'
     display_name = 'MongoLight'
-    client_class = DatabaseClient  # Define client_class
+    client_class = DatabaseClient  # Clase para manejar la conexión
+    # Clase para manejar la creación de la base de datos
+    creation_class = DatabaseCreation
 
     def __init__(self, settings_dict, *args, **kwargs):
         super().__init__(settings_dict, *args, **kwargs)
