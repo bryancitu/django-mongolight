@@ -2,9 +2,19 @@ import pymongo
 from django.db.backends.base.base import BaseDatabaseWrapper
 
 
+class DatabaseClient:
+    """
+    A simple client class to handle MongoDB connections.
+    """
+
+    def __init__(self, connection):
+        self.connection = connection
+
+
 class DatabaseWrapper(BaseDatabaseWrapper):
     vendor = 'mongodb'
     display_name = 'MongoLight'
+    client_class = DatabaseClient  # Define client_class
 
     def __init__(self, settings_dict, *args, **kwargs):
         super().__init__(settings_dict, *args, **kwargs)
