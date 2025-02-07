@@ -1,11 +1,11 @@
 import pymongo
-import pymongo.errors as mongo_errors
 from django.db.backends.base.base import BaseDatabaseWrapper
 from django.db.backends.base.features import BaseDatabaseFeatures
 from django.db.backends.base.introspection import BaseDatabaseIntrospection
 from django.db.backends.base.operations import BaseDatabaseOperations
 from django.db.backends.base.client import BaseDatabaseClient
 from .creation import DatabaseCreation  # Importa la clase DatabaseCreation
+from .exceptions import DatabaseExceptions
 
 
 class DatabaseOperations(BaseDatabaseOperations):
@@ -62,7 +62,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
     introspection_class = DatabaseIntrospection
     ops_class = DatabaseOperations  # Clase para manejar las operaciones del backend
     # Define las excepciones de la base de datos
-    Database = mongo_errors
+    Database = DatabaseExceptions
 
     def __init__(self, settings_dict, *args, **kwargs):
         super().__init__(settings_dict, *args, **kwargs)
@@ -93,3 +93,9 @@ class DatabaseWrapper(BaseDatabaseWrapper):
             connection_params = self.get_connection_params()
             self.connection = self.get_new_connection(connection_params)
         return self.connection
+
+    def _set_autocommit(self, autocommit):
+        """
+        MongoDB no soporta autocommit, así que este método no hace nada.
+        """
+        pass
