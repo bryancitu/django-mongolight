@@ -1,6 +1,7 @@
 import pymongo
 from django.db.backends.base.base import BaseDatabaseWrapper
 from django.db.backends.base.features import BaseDatabaseFeatures
+from django.db.backends.base.introspection import BaseDatabaseIntrospection
 from .creation import DatabaseCreation  # Importa la clase DatabaseCreation
 
 
@@ -22,6 +23,18 @@ class DatabaseClient:
         self.connection = connection
 
 
+class DatabaseIntrospection(BaseDatabaseIntrospection):
+    """
+    Introspection class for MongoDB.
+    """
+
+    def get_table_list(self, cursor):
+        """
+        Return a list of table (collection) names in the database.
+        """
+        return self.connection.connection.list_collection_names()
+
+
 class DatabaseWrapper(BaseDatabaseWrapper):
     vendor = 'mongodb'
     display_name = 'MongoLight'
@@ -30,6 +43,8 @@ class DatabaseWrapper(BaseDatabaseWrapper):
     creation_class = DatabaseCreation
     # Clase para manejar las características del backend
     features_class = DatabaseFeatures
+    # Clase para manejar la introspección de la base de datos
+    introspection_class = DatabaseIntrospection
 
     def __init__(self, settings_dict, *args, **kwargs):
         super().__init__(settings_dict, *args, **kwargs)
