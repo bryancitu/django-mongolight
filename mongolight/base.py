@@ -135,3 +135,11 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         MongoDB no soporta autocommit, así que este método no hace nada.
         """
         pass
+
+    def close(self):
+        """
+        Close the connection to MongoDB.
+        """
+        if self.connection is not None:
+            self.connection.client.close()  # Cierra el cliente de MongoDB
+            self.connection = None
