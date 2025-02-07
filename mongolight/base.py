@@ -5,6 +5,7 @@ from django.db.backends.base.introspection import BaseDatabaseIntrospection
 from django.db.backends.base.operations import BaseDatabaseOperations
 from django.db.backends.base.client import BaseDatabaseClient
 from .creation import DatabaseCreation  # Importa la clase DatabaseCreation
+from .schema import DatabaseSchemaEditor
 from .exceptions import DatabaseExceptions
 
 
@@ -96,6 +97,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
     ops_class = DatabaseOperations  # Clase para manejar las operaciones del backend
     # Define las excepciones de la base de datos
     Database = DatabaseExceptions
+    SchemaEditorClass = DatabaseSchemaEditor  # Asigna la clase SchemaEditor
 
     def __init__(self, settings_dict, *args, **kwargs):
         super().__init__(settings_dict, *args, **kwargs)
