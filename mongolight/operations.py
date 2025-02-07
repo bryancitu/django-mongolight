@@ -8,3 +8,9 @@ class DatabaseOperations(BaseDatabaseOperations):
         for table in tables:
             self.connection[table].delete_many({})
         return []
+
+    def max_name_length(self):
+        """
+        Return the maximum length of table and column names.
+        """
+        return 255  # MongoDB no tiene un límite estricto, pero Django necesita un valor

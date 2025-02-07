@@ -2,7 +2,20 @@ import pymongo
 from django.db.backends.base.base import BaseDatabaseWrapper
 from django.db.backends.base.features import BaseDatabaseFeatures
 from django.db.backends.base.introspection import BaseDatabaseIntrospection
+from django.db.backends.base.operations import BaseDatabaseOperations
 from .creation import DatabaseCreation  # Importa la clase DatabaseCreation
+
+
+class DatabaseOperations(BaseDatabaseOperations):
+    """
+    Operations class for MongoDB.
+    """
+
+    def max_name_length(self):
+        """
+        Return the maximum length of table and column names.
+        """
+        return 255  # MongoDB no tiene un límite estricto, pero Django necesita un valor
 
 
 class DatabaseFeatures(BaseDatabaseFeatures):
@@ -45,6 +58,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
     features_class = DatabaseFeatures
     # Clase para manejar la introspección de la base de datos
     introspection_class = DatabaseIntrospection
+    ops_class = DatabaseOperations  # Clase para manejar las operaciones del backend
 
     def __init__(self, settings_dict, *args, **kwargs):
         super().__init__(settings_dict, *args, **kwargs)
