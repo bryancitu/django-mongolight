@@ -14,3 +14,9 @@ class DatabaseOperations(BaseDatabaseOperations):
         Return the maximum length of table and column names.
         """
         return 255  # MongoDB no tiene un límite estricto, pero Django necesita un valor
+
+    def quote_name(self, name):
+        """
+        Return the name as-is, since MongoDB does not require quoting.
+        """
+        return name
