@@ -1,8 +1,10 @@
 import pymongo
+import pymongo.errors as mongo_errors
 from django.db.backends.base.base import BaseDatabaseWrapper
 from django.db.backends.base.features import BaseDatabaseFeatures
 from django.db.backends.base.introspection import BaseDatabaseIntrospection
 from django.db.backends.base.operations import BaseDatabaseOperations
+from django.db.backends.base.client import BaseDatabaseClient
 from .creation import DatabaseCreation  # Importa la clase DatabaseCreation
 
 
@@ -27,7 +29,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
     supports_timezones = False
 
 
-class DatabaseClient:
+class DatabaseClient(BaseDatabaseClient):
     """
     A simple client class to handle MongoDB connections.
     """
@@ -59,6 +61,8 @@ class DatabaseWrapper(BaseDatabaseWrapper):
     # Clase para manejar la introspección de la base de datos
     introspection_class = DatabaseIntrospection
     ops_class = DatabaseOperations  # Clase para manejar las operaciones del backend
+    # Define las excepciones de la base de datos
+    Database = mongo_errors
 
     def __init__(self, settings_dict, *args, **kwargs):
         super().__init__(settings_dict, *args, **kwargs)
@@ -74,12 +78,18 @@ class DatabaseWrapper(BaseDatabaseWrapper):
             'authSource': self.settings_dict.get('AUTH_SOURCE', 'admin'),
         }
 
+    def get_new_connection(self, conn_params):
+        """
+        Establece una nueva conexión a MongoDB.
+        """
+        client = pymongo.MongoClient(**conn_params)
+        return client[conn_params.get('database', self.settings_dict['NAME'])]
+
     def create_cursor(self, name=None):
         return None  # MongoDB doesn't use cursors
 
     def _connect(self):
         if self.connection is None:
             connection_params = self.get_connection_params()
-            self.client = pymongo.MongoClient(**connection_params)
-            self.connection = self.client[self.settings_dict['NAME']]
+            self.connection = self.get_new_connection(connection_params)
         return self.connection
