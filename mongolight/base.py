@@ -1,33 +1,12 @@
 import pymongo
 from django.db.backends.base.base import BaseDatabaseWrapper
-from django.db.backends.base.features import BaseDatabaseFeatures
-from django.db.backends.base.introspection import BaseDatabaseIntrospection
-from django.db.backends.base.operations import BaseDatabaseOperations
 from django.db.backends.base.client import BaseDatabaseClient
+from .features import DatabaseFeatures
+from .introspection import DatabaseIntrospection
 from .creation import DatabaseCreation  # Importa la clase DatabaseCreation
 from .schema import DatabaseSchemaEditor
 from .exceptions import DatabaseExceptions
-
-
-class DatabaseOperations(BaseDatabaseOperations):
-    """
-    Operations class for MongoDB.
-    """
-
-    def max_name_length(self):
-        """
-        Return the maximum length of table and column names.
-        """
-        return 255  # MongoDB no tiene un límite estricto, pero Django necesita un valor
-
-
-class DatabaseFeatures(BaseDatabaseFeatures):
-    """
-    Features specific to MongoDB.
-    """
-    supports_transactions = False  # MongoDB no soporta transacciones ACID
-    can_return_columns_from_insert = False
-    supports_timezones = False
+from .operations import DatabaseOperations
 
 
 class DatabaseClient(BaseDatabaseClient):
@@ -37,18 +16,6 @@ class DatabaseClient(BaseDatabaseClient):
 
     def __init__(self, connection):
         self.connection = connection
-
-
-class DatabaseIntrospection(BaseDatabaseIntrospection):
-    """
-    Introspection class for MongoDB.
-    """
-
-    def get_table_list(self, cursor):
-        """
-        Return a list of table (collection) names in the database.
-        """
-        return self.connection.connection.list_collection_names()
 
 
 class MongoCursor:
