@@ -50,6 +50,39 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
         return self.connection.connection.list_collection_names()
 
 
+class MongoCursor:
+    """
+    A custom cursor for MongoDB.
+    """
+
+    def __init__(self, connection):
+        self.connection = connection
+
+    def close(self):
+        """
+        Close the cursor. In MongoDB, this is a no-op.
+        """
+        pass
+
+    def execute(self, query, params=None):
+        """
+        Execute a query. In MongoDB, this is handled by the connection.
+        """
+        pass
+
+    def fetchone(self):
+        """
+        Fetch one result. Not used in MongoDB.
+        """
+        return None
+
+    def fetchall(self):
+        """
+        Fetch all results. Not used in MongoDB.
+        """
+        return []
+
+
 class DatabaseWrapper(BaseDatabaseWrapper):
     vendor = 'mongodb'
     display_name = 'MongoLight'
@@ -86,7 +119,10 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         return client[conn_params.get('database', self.settings_dict['NAME'])]
 
     def create_cursor(self, name=None):
-        return None  # MongoDB doesn't use cursors
+        """
+        Create a custom cursor for MongoDB.
+        """
+        return MongoCursor(self.connection)
 
     def _connect(self):
         if self.connection is None:
