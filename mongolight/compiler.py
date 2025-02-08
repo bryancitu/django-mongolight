@@ -102,42 +102,42 @@ class MongoCompiler(SQLCompiler):
 class SQLInsertCompiler(MongoCompiler):
     def as_sql(self, *args, **kwargs):
         """
-        Esta implementación extrae los valores a insertar del query y realiza
-        la inserción en MongoDB.
+        Extrae los valores a insertar del query y realiza la inserción en MongoDB.
 
-        NOTA:
-          - Se asume que se trata de una inserción de un único documento.
-          - Dependiendo de la versión de Django y de la complejidad del query,
-            los datos a insertar pueden encontrarse en 'insert_values' o en 'objs'.
+        Se soporta:
+          - insert_values u objs en formato lista o tupla.
+          - Si el primer elemento es una lista o tupla, se asume que es una fila con valores.
+          - Si el primer elemento es un diccionario, se usa directamente.
+          - Si el primer elemento es un valor único y el modelo tiene un solo campo, se crea un diccionario.
         """
-        # Intentamos extraer los valores de inserción.
+        # Intentamos obtener los datos de inserción.
         if hasattr(self.query, 'insert_values') and self.query.insert_values:
-            # Usualmente es una lista de listas.
-            data = self.query.insert_values
+            data = self.query.insert_values  # Puede ser lista o tupla.
         elif hasattr(self.query, 'objs') and self.query.objs:
-            # Puede ser una lista de diccionarios o instancias.
             data = self.query.objs
         else:
             raise NotImplementedError(
                 "No se encontraron valores para insertar en el query.")
 
-        # Obtenemos el modelo y los nombres de campos.
+        # Obtenemos el modelo y los nombres de sus campos.
         model = self.query.model
         field_names = [field.column for field in model._meta.concrete_fields]
 
-        # Procesamos el primer conjunto de datos (para inserción simple).
-        # Si insert_values es una lista de listas (cada lista es una fila), usamos zip.
-        if isinstance(data, list):
+        # Soportamos data en formato lista o tupla.
+        if isinstance(data, (list, tuple)):
+            # Obtenemos el primer conjunto de datos.
             first_row = data[0]
-            # Si first_row es una lista o tupla, combinamos con los nombres de campos.
             if isinstance(first_row, (list, tuple)):
                 document = dict(zip(field_names, first_row))
-            # Si ya es un diccionario, lo usamos directamente.
             elif isinstance(first_row, dict):
                 document = first_row
             else:
-                raise NotImplementedError(
-                    "Formato de datos de inserción desconocido.")
+                # Si first_row no es lista, tupla o diccionario, puede ser un valor único.
+                if len(field_names) == 1:
+                    document = {field_names[0]: first_row}
+                else:
+                    raise NotImplementedError(
+                        "Formato de datos de inserción desconocido.")
         else:
             raise NotImplementedError(
                 "Formato de datos de inserción desconocido.")
@@ -146,7 +146,7 @@ class SQLInsertCompiler(MongoCompiler):
         collection_name = model._meta.db_table
         self.connection[collection_name].insert_one(document)
 
-        # Retornamos una tupla vacía para cumplir con la interfaz.
+        # Retornamos una tupla vacía para cumplir con la interfaz de Django.
         return ("", ())
 
 
