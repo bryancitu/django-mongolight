@@ -1,3 +1,5 @@
+# mongolight/compiler.py
+
 from django.db.models.sql.compiler import SQLCompiler
 
 
@@ -20,3 +22,11 @@ class MongoCompiler(SQLCompiler):
 
     def _get_projection(self):
         return {field.column: 1 for field in self.query.select}
+
+
+class SQLInsertCompiler(MongoCompiler):
+    def as_sql(self, *args, **kwargs):
+        # Aquí puedes implementar la lógica de inserción o, si no es aplicable,
+        # simplemente lanzar una excepción o redirigir a una implementación que use la API de MongoDB.
+        raise NotImplementedError(
+            "MongoDB backend does not support SQL insert compilation.")
