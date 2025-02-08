@@ -44,6 +44,12 @@ class MongoCursor:
         """
         return None
 
+    def fetchmany(self, size=None):
+        """
+        Fetch many results. Not used in MongoDB.
+        """
+        return []
+
     def fetchall(self):
         """
         Fetch all results. Not used in MongoDB.
