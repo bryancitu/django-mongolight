@@ -126,7 +126,7 @@ class SQLInsertCompiler(MongoCompiler):
         # Si 'data' no es una lista o tupla, se intenta convertirla a lista.
         if not isinstance(data, (list, tuple)):
             try:
-                data = list(data)
+                data = [data]  # Convertir a lista de una sola fila
             except Exception:
                 raise NotImplementedError(
                     "Formato de datos de inserción desconocido.")
@@ -144,30 +144,29 @@ class SQLInsertCompiler(MongoCompiler):
                 field.column for field in model._meta.concrete_fields]
 
         # Procesamos los datos:
-        # Caso A: data es una secuencia que representa una única fila de valores
-        first_elem = data[0]
-        if not isinstance(first_elem, (list, tuple, dict)):
-            # Se espera que 'data' tenga la misma cantidad de valores que columnas.
-            if len(data) != len(field_names):
-                raise NotImplementedError(
-                    "El número de valores no coincide con el número de campos")
-            document = dict(zip(field_names, data))
-        else:
-            # Caso B: data es una lista de filas; se toma la primera fila.
-            if isinstance(first_elem, (list, tuple)):
-                document = dict(zip(field_names, first_elem))
-            elif isinstance(first_elem, dict):
-                document = first_elem
+        documents = []
+        for row in data:
+            if isinstance(row, (list, tuple)):
+                # Caso A: Fila como lista o tupla.
+                if len(row) != len(field_names):
+                    raise NotImplementedError(
+                        "El número de valores no coincide con el número de campos")
+                document = dict(zip(field_names, row))
+            elif isinstance(row, dict):
+                # Caso B: Fila como diccionario.
+                document = row
             else:
+                # Caso C: Fila como valor único (para modelos con un solo campo).
                 if len(field_names) == 1:
-                    document = {field_names[0]: first_elem}
+                    document = {field_names[0]: row}
                 else:
                     raise NotImplementedError(
                         "Formato de datos de inserción desconocido.")
+            documents.append(document)
 
         # Realizamos la inserción en la colección correspondiente.
         collection_name = model._meta.db_table
-        self.connection[collection_name].insert_one(document)
+        self.connection[collection_name].insert_many(documents)
         # Retornamos una tupla vacía para cumplir con la interfaz de Django.
         return ("", ())
 

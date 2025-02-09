@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="django-mongolight",
-    version="0.1.24",
+    version="0.1.25",
     author="Bryan Jesus Ramon Avila",
     author_email="bryanjesus.ra@gmail.com",
     description="A lightweight library for integrating Django with MongoDB.",
