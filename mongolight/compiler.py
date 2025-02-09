@@ -123,8 +123,20 @@ class SQLInsertCompiler(MongoCompiler):
             raise NotImplementedError(
                 "No se encontraron valores para insertar en el query.")
 
+        # Si 'data' no es una lista o tupla, se intenta convertirla a lista.
+        if not isinstance(data, (list, tuple)):
+            try:
+                data = list(data)
+            except Exception:
+                raise NotImplementedError(
+                    "Formato de datos de inserción desconocido.")
+
+        # Verificamos que existan datos.
+        if not data:
+            raise NotImplementedError("No hay datos a insertar.")
+
         model = self.query.model
-        # Usamos las columnas definidas en la query si existen; de lo contrario, usamos los campos del modelo.
+        # Si la query define columnas, las usamos; de lo contrario, usamos los campos del modelo.
         if hasattr(self.query, 'columns') and self.query.columns:
             field_names = self.query.columns
         else:
@@ -132,35 +144,30 @@ class SQLInsertCompiler(MongoCompiler):
                 field.column for field in model._meta.concrete_fields]
 
         # Procesamos los datos:
-        # Si 'data' es una secuencia, comprobamos si su primer elemento es a su vez una secuencia.
-        if isinstance(data, (list, tuple)):
-            first_elem = data[0]
-            # Caso 1: data es la fila completa (no es una lista de filas)
-            if not isinstance(first_elem, (list, tuple, dict)):
-                if len(data) != len(field_names):
-                    raise NotImplementedError(
-                        "El número de valores no coincide con el número de campos")
-                document = dict(zip(field_names, data))
-            else:
-                # Caso 2: data es una lista de filas; tomamos la primera fila.
-                if isinstance(first_elem, (list, tuple)):
-                    document = dict(zip(field_names, first_elem))
-                elif isinstance(first_elem, dict):
-                    document = first_elem
-                else:
-                    if len(field_names) == 1:
-                        document = {field_names[0]: first_elem}
-                    else:
-                        raise NotImplementedError(
-                            "Formato de datos de inserción desconocido.")
+        # Caso A: data es una secuencia que representa una única fila de valores
+        first_elem = data[0]
+        if not isinstance(first_elem, (list, tuple, dict)):
+            # Se espera que 'data' tenga la misma cantidad de valores que columnas.
+            if len(data) != len(field_names):
+                raise NotImplementedError(
+                    "El número de valores no coincide con el número de campos")
+            document = dict(zip(field_names, data))
         else:
-            raise NotImplementedError(
-                "Formato de datos de inserción desconocido.")
+            # Caso B: data es una lista de filas; se toma la primera fila.
+            if isinstance(first_elem, (list, tuple)):
+                document = dict(zip(field_names, first_elem))
+            elif isinstance(first_elem, dict):
+                document = first_elem
+            else:
+                if len(field_names) == 1:
+                    document = {field_names[0]: first_elem}
+                else:
+                    raise NotImplementedError(
+                        "Formato de datos de inserción desconocido.")
 
         # Realizamos la inserción en la colección correspondiente.
         collection_name = model._meta.db_table
         self.connection[collection_name].insert_one(document)
-
         # Retornamos una tupla vacía para cumplir con la interfaz de Django.
         return ("", ())
 
