@@ -104,40 +104,55 @@ class SQLInsertCompiler(MongoCompiler):
         """
         Extrae los valores a insertar del query y realiza la inserción en MongoDB.
 
-        Se soporta:
-          - insert_values u objs en formato lista o tupla.
-          - Si el primer elemento es una lista o tupla, se asume que es una fila con valores.
-          - Si el primer elemento es un diccionario, se usa directamente.
-          - Si el primer elemento es un valor único y el modelo tiene un solo campo, se crea un diccionario.
+        Soporta distintos formatos:
+         - Los datos pueden venir en los atributos 'insert_values', 'objs' o 'value_rows'.
+         - Se espera que los datos sean una secuencia (lista o tupla) de filas, donde cada fila es:
+              - Una secuencia (lista o tupla) con tantos elementos como columnas, o
+              - Un diccionario con claves que correspondan a los nombres de las columnas.
+         - En algunos casos, la query puede retornar una única fila (es decir, una secuencia
+           con la cantidad de valores igual a la cantidad de campos).
         """
-        # Intentamos obtener los datos de inserción.
+        # Intentamos obtener los datos a insertar desde distintos atributos.
         if hasattr(self.query, 'insert_values') and self.query.insert_values:
-            data = self.query.insert_values  # Puede ser lista o tupla.
+            data = self.query.insert_values
         elif hasattr(self.query, 'objs') and self.query.objs:
             data = self.query.objs
+        elif hasattr(self.query, 'value_rows') and self.query.value_rows:
+            data = self.query.value_rows
         else:
             raise NotImplementedError(
                 "No se encontraron valores para insertar en el query.")
 
-        # Obtenemos el modelo y los nombres de sus campos.
         model = self.query.model
-        field_names = [field.column for field in model._meta.concrete_fields]
+        # Usamos las columnas definidas en la query si existen; de lo contrario, usamos los campos del modelo.
+        if hasattr(self.query, 'columns') and self.query.columns:
+            field_names = self.query.columns
+        else:
+            field_names = [
+                field.column for field in model._meta.concrete_fields]
 
-        # Soportamos data en formato lista o tupla.
+        # Procesamos los datos:
+        # Si 'data' es una secuencia, comprobamos si su primer elemento es a su vez una secuencia.
         if isinstance(data, (list, tuple)):
-            # Obtenemos el primer conjunto de datos.
-            first_row = data[0]
-            if isinstance(first_row, (list, tuple)):
-                document = dict(zip(field_names, first_row))
-            elif isinstance(first_row, dict):
-                document = first_row
-            else:
-                # Si first_row no es lista, tupla o diccionario, puede ser un valor único.
-                if len(field_names) == 1:
-                    document = {field_names[0]: first_row}
-                else:
+            first_elem = data[0]
+            # Caso 1: data es la fila completa (no es una lista de filas)
+            if not isinstance(first_elem, (list, tuple, dict)):
+                if len(data) != len(field_names):
                     raise NotImplementedError(
-                        "Formato de datos de inserción desconocido.")
+                        "El número de valores no coincide con el número de campos")
+                document = dict(zip(field_names, data))
+            else:
+                # Caso 2: data es una lista de filas; tomamos la primera fila.
+                if isinstance(first_elem, (list, tuple)):
+                    document = dict(zip(field_names, first_elem))
+                elif isinstance(first_elem, dict):
+                    document = first_elem
+                else:
+                    if len(field_names) == 1:
+                        document = {field_names[0]: first_elem}
+                    else:
+                        raise NotImplementedError(
+                            "Formato de datos de inserción desconocido.")
         else:
             raise NotImplementedError(
                 "Formato de datos de inserción desconocido.")
